@@ -41,6 +41,28 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.CONFLICT);
     }
 
+    @ExceptionHandler(
+            org.springframework.security.authentication.BadCredentialsException.class
+    )
+    public ResponseEntity<ApiResponse<Object>>
+    handleBadCredentials(
+            org.springframework.security.authentication.BadCredentialsException ex
+    ) {
+
+        ApiResponse<Object> response =
+                ApiResponse.builder()
+                        .success(false)
+                        .message(ex.getMessage())
+                        .data(ErrorCode.UNAUTHORIZED)
+                        .timestamp(java.time.LocalDateTime.now())
+                        .build();
+
+        return new ResponseEntity<>(
+                response,
+                org.springframework.http.HttpStatus.UNAUTHORIZED
+        );
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Object>> handleGenericException(
             Exception ex
