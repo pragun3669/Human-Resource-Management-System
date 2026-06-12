@@ -7,6 +7,7 @@ import com.pragun.hrms.entity.Department;
 import com.pragun.hrms.exception.DuplicateResourceException;
 import com.pragun.hrms.exception.ResourceNotFoundException;
 import com.pragun.hrms.repository.DepartmentRepository;
+import com.pragun.hrms.repository.EmployeeRepository;
 import com.pragun.hrms.service.DepartmentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,7 +21,7 @@ public class DepartmentServiceImpl
         implements DepartmentService {
 
     private final DepartmentRepository departmentRepository;
-
+    private final EmployeeRepository employeeRepository;
     @Override
     public DepartmentResponse createDepartment(
             CreateDepartmentRequest request) {
@@ -90,7 +91,18 @@ public class DepartmentServiceImpl
                 departmentRepository.findById(id)
                         .orElseThrow(() ->
                                 new ResourceNotFoundException(
-                                        "Department not found with id: " + id));
+                                        "Department not found"));
+
+        long employeeCount =
+                employeeRepository
+                        .countByDepartmentId(id);
+
+        if (employeeCount > 0) {
+
+            throw new IllegalArgumentException(
+                    "Cannot delete department with employees"
+            );
+        }
 
         departmentRepository.delete(department);
     }

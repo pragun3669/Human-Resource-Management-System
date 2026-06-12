@@ -29,6 +29,13 @@ public class AuthServiceImpl implements AuthService {
                                 "Invalid email or password"
                         ));
 
+        if (!employee.getIsActive()) {
+
+            throw new IllegalArgumentException(
+                    "Account is inactive"
+            );
+        }
+
         if (!passwordEncoder.matches(
                 request.getPassword(),
                 employee.getPassword())) {

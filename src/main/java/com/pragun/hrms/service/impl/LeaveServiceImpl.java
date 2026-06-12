@@ -63,6 +63,28 @@ public class LeaveServiceImpl implements LeaveService {
             );
         }
 
+        List<Leave> existingLeaves =
+                leaveRepository.findByEmployee(employee);
+
+        for (Leave existing : existingLeaves) {
+
+            boolean overlap =
+                    !request.getEndDate()
+                            .isBefore(existing.getStartDate())
+                            &&
+                            !request.getStartDate()
+                                    .isAfter(existing.getEndDate());
+
+            if (overlap &&
+                    existing.getStatus()
+                            != LeaveStatus.REJECTED) {
+
+                throw new IllegalArgumentException(
+                        "Leave dates overlap with existing leave request"
+                );
+            }
+        }
+
         Leave leave = Leave.builder()
                 .employee(employee)
                 .startDate(request.getStartDate())
@@ -95,8 +117,14 @@ public class LeaveServiceImpl implements LeaveService {
     @Override
     public List<LeaveResponse> getPendingLeaves() {
 
+        Employee manager =
+                getAuthenticatedEmployee();
+
         return leaveRepository
-                .findByStatus(LeaveStatus.PENDING)
+                .findByEmployee_ManagerAndStatus(
+                        manager,
+                        LeaveStatus.PENDING
+                )
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
@@ -107,12 +135,26 @@ public class LeaveServiceImpl implements LeaveService {
             Long leaveId,
             LeaveDecisionRequest request) {
 
+        Employee manager =
+                getAuthenticatedEmployee();
+
         Leave leave =
                 leaveRepository.findById(leaveId)
                         .orElseThrow(() ->
                                 new ResourceNotFoundException(
                                         "Leave not found"
                                 ));
+
+        if (leave.getEmployee().getManager() == null
+                || !leave.getEmployee()
+                .getManager()
+                .getId()
+                .equals(manager.getId())) {
+
+            throw new IllegalArgumentException(
+                    "You can approve only your team's leave requests"
+            );
+        }
 
         if (leave.getStatus()
                 != LeaveStatus.PENDING) {
@@ -142,12 +184,26 @@ public class LeaveServiceImpl implements LeaveService {
             Long leaveId,
             LeaveDecisionRequest request) {
 
+        Employee manager =
+                getAuthenticatedEmployee();
+
         Leave leave =
                 leaveRepository.findById(leaveId)
                         .orElseThrow(() ->
                                 new ResourceNotFoundException(
                                         "Leave not found"
                                 ));
+
+        if (leave.getEmployee().getManager() == null
+                || !leave.getEmployee()
+                .getManager()
+                .getId()
+                .equals(manager.getId())) {
+
+            throw new IllegalArgumentException(
+                    "You can reject only your team's leave requests"
+            );
+        }
 
         if (leave.getStatus()
                 != LeaveStatus.PENDING) {

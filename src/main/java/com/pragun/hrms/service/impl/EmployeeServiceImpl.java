@@ -13,6 +13,12 @@ import com.pragun.hrms.repository.DepartmentRepository;
 import com.pragun.hrms.repository.EmployeeRepository;
 import com.pragun.hrms.service.EmployeeService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import com.pragun.hrms.specification.EmployeeSpecification;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -99,12 +105,40 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
-    public List<EmployeeResponse> getAllEmployees() {
+    public Page<EmployeeResponse> getAllEmployees(
+            int page,
+            int size,
+            String sortBy,
+            String sortDir,
+            Role role,
+            Long departmentId,
+            Boolean isActive) {
 
-        return employeeRepository.findAll()
-                .stream()
-                .map(this::mapToResponse)
-                .toList();
+        Sort sort = sortDir.equalsIgnoreCase("desc")
+                ? Sort.by(sortBy).descending()
+                : Sort.by(sortBy).ascending();
+
+        Pageable pageable =
+                PageRequest.of(
+                        page,
+                        size,
+                        sort
+                );
+
+        Specification<Employee> spec =
+                Specification
+                        .where(
+                                EmployeeSpecification.hasRole(role))
+                        .and(
+                                EmployeeSpecification.hasDepartment(
+                                        departmentId))
+                        .and(
+                                EmployeeSpecification.isActive(
+                                        isActive));
+
+        return employeeRepository
+                .findAll(spec, pageable)
+                .map(this::mapToResponse);
     }
 
     @Override
@@ -160,7 +194,6 @@ public class EmployeeServiceImpl implements EmployeeService {
 
         return mapToResponse(updated);
     }
-
     @Override
     public void deleteEmployee(Long id) {
 
@@ -170,7 +203,12 @@ public class EmployeeServiceImpl implements EmployeeService {
                                 new ResourceNotFoundException(
                                         "Employee not found"));
 
-        employeeRepository.delete(employee);
+        employee.setIsActive(false);
+
+        employee.setUpdatedAt(
+                LocalDateTime.now());
+
+        employeeRepository.save(employee);
     }
 
     private EmployeeResponse mapToResponse(

@@ -13,4 +13,12 @@ public interface LeaveRepository
     List<Leave> findByEmployee(Employee employee);
 
     List<Leave> findByStatus(LeaveStatus status);
+
+    List<Leave> findByEmployee_ManagerAndStatus(
+            Employee manager,
+            LeaveStatus status
+    );
+    long countByStatus(
+            LeaveStatus status
+    );
 }

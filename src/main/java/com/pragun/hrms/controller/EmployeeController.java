@@ -8,6 +8,8 @@ import com.pragun.hrms.dto.response.EmployeeResponse;
 import com.pragun.hrms.service.EmployeeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import com.pragun.hrms.entity.Role;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -56,16 +58,46 @@ public class EmployeeController {
                         .build()
         );
     }
-    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
-    public ResponseEntity<ApiResponse<List<EmployeeResponse>>>
-    getAllEmployees() {
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Page<EmployeeResponse>>>
+    getAllEmployees(
 
-        List<EmployeeResponse> response =
-                employeeService.getAllEmployees();
+            @RequestParam(defaultValue = "0")
+            int page,
+
+            @RequestParam(defaultValue = "10")
+            int size,
+
+            @RequestParam(defaultValue = "id")
+            String sortBy,
+
+            @RequestParam(defaultValue = "asc")
+            String sortDir,
+
+            @RequestParam(required = false)
+            Role role,
+
+            @RequestParam(required = false)
+            Long departmentId,
+
+            @RequestParam(required = false)
+            Boolean isActive
+    ) {
+
+        Page<EmployeeResponse> response =
+                employeeService.getAllEmployees(
+                        page,
+                        size,
+                        sortBy,
+                        sortDir,
+                        role,
+                        departmentId,
+                        isActive
+                );
 
         return ResponseEntity.ok(
-                ApiResponse.<List<EmployeeResponse>>builder()
+                ApiResponse.<Page<EmployeeResponse>>builder()
                         .success(true)
                         .message("Employees fetched successfully")
                         .data(response)
